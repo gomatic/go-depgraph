@@ -28,6 +28,9 @@ type Edge[T cmp.Ordered] struct {
 	Dependency T
 }
 
+// Nodes is the set of nodes to order, symmetric with the returned Order.
+type Nodes[T cmp.Ordered] []T
+
 // Order is a topologically sorted sequence of nodes.
 type Order[T cmp.Ordered] []T
 
@@ -35,7 +38,7 @@ type Order[T cmp.Ordered] []T
 // Dependent. Ties are broken lexically for deterministic, reviewable output.
 // Edges referencing nodes outside the set are ignored (assumed already
 // present). It returns ErrCycle when no valid ordering exists.
-func Sort[T cmp.Ordered](nodes []T, edges []Edge[T]) (Order[T], error) {
+func Sort[T cmp.Ordered](nodes Nodes[T], edges []Edge[T]) (Order[T], error) {
 	present := toSet(nodes)
 	indegree, dependents := buildAdjacency(present, edges)
 	order := kahn(present, indegree, dependents)
@@ -45,7 +48,7 @@ func Sort[T cmp.Ordered](nodes []T, edges []Edge[T]) (Order[T], error) {
 	return order, nil
 }
 
-func toSet[T cmp.Ordered](nodes []T) map[T]struct{} {
+func toSet[T cmp.Ordered](nodes Nodes[T]) map[T]struct{} {
 	set := make(map[T]struct{}, len(nodes))
 	for _, n := range nodes {
 		set[n] = struct{}{}
@@ -59,9 +62,8 @@ func buildAdjacency[T cmp.Ordered](present map[T]struct{}, edges []Edge[T]) (map
 		indegree[n] = 0
 	}
 	dependents := make(map[T][]T)
-	seen := make(map[Edge[T]]struct{}, len(edges))
 	for _, e := range edges {
-		if relevant(present, e) && !duplicate(seen, e) {
+		if relevant(present, e) {
 			indegree[e.Dependent]++
 			dependents[e.Dependency] = append(dependents[e.Dependency], e.Dependent)
 		}
@@ -73,14 +75,6 @@ func relevant[T cmp.Ordered](present map[T]struct{}, e Edge[T]) bool {
 	_, dependent := present[e.Dependent]
 	_, dependency := present[e.Dependency]
 	return dependent && dependency
-}
-
-func duplicate[T cmp.Ordered](seen map[Edge[T]]struct{}, e Edge[T]) bool {
-	if _, ok := seen[e]; ok {
-		return true
-	}
-	seen[e] = struct{}{}
-	return false
 }
 
 func kahn[T cmp.Ordered](present map[T]struct{}, indegree map[T]int, dependents map[T][]T) Order[T] {

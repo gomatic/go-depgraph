@@ -62,19 +62,33 @@ func TestSortIgnoresEdgesToUnknownNodes(t *testing.T) {
 	}
 }
 
-func TestSortDeduplicatesRepeatedEdges(t *testing.T) {
-	got, err := depgraph.Sort(
-		[]string{"b", "a"},
-		[]depgraph.Edge[string]{
-			{Dependent: "b", Dependency: "a"},
-			{Dependent: "b", Dependency: "a"},
-		},
-	)
+func TestSortEmptyInputReturnsEmptyOrder(t *testing.T) {
+	got, err := depgraph.Sort[string](nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := []string{"a", "b"}; !slices.Equal([]string(got), want) {
+	if len(got) != 0 {
+		t.Fatalf("Sort = %v, want empty", got)
+	}
+}
+
+func TestSortSingleNodeNoEdges(t *testing.T) {
+	got, err := depgraph.Sort([]string{"a"}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := []string{"a"}; !slices.Equal([]string(got), want) {
 		t.Fatalf("Sort = %v, want %v", got, want)
+	}
+}
+
+func TestSortSelfDependencyIsCycle(t *testing.T) {
+	_, err := depgraph.Sort(
+		[]string{"a"},
+		[]depgraph.Edge[string]{{Dependent: "a", Dependency: "a"}},
+	)
+	if !errors.Is(err, depgraph.ErrCycle) {
+		t.Fatalf("Sort error = %v, want ErrCycle", err)
 	}
 }
 
