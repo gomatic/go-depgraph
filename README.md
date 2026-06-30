@@ -33,6 +33,10 @@ func main() {
 
 `Sort` is generic over any [`cmp.Ordered`](https://pkg.go.dev/cmp#Ordered) node type. Edges referencing nodes outside the input set are ignored (assumed already present), and `errors.Is(err, depgraph.ErrCycle)` distinguishes the cycle case.
 
+## License
+
+[MIT](LICENSE).
+
 ## Maintenance
 
 The shared build config (`Makefile`, `.golangci.yaml`, `.editorconfig`, `.gitignore`, `.github/`) is owned and distributed by [`nicerobot/tools.repository`](https://github.com/nicerobot/tools.repository) — do not edit it in-tree; per-repo divergence belongs in a `Makefile.local`.
